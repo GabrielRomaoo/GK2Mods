@@ -1,22 +1,31 @@
 using System;
 using System.Collections.Generic;
 using HarmonyLib;
+using LazyBearTechnology;
 using UnityEngine;
 
 namespace GK2Mods.StorageNetwork
 {
     /// <summary>
-    /// While a Connector is being placed, every station in the zone gets a temporary BuildArea around it, the
-    /// way a furnace carries the Crucible's area: build cells inside it are available and drawn blue (layer 28
-    /// marks "buff" cells), cells elsewhere are not. The areas are removed when build mode ends.
+    /// Shows, while a Connector is being placed, where it links stations — the way the game shows a workbench
+    /// extension's reach (the Crucible's blue area). The build grid draws blue the cells covered by a layer-28
+    /// "buff" collider that belongs to an object (its Wgo), for the objects the pointer allows. So each station
+    /// in the zone gets a temporary buff collider as a child, the size of the link reach, and the Connector's
+    /// pointer allows those stations. Placement itself follows the template chest's normal rules.
+    /// Everything is removed when build mode ends; nothing is saved.
     /// </summary>
     internal static class LinkAreas
     {
-        internal const string AreaId = "gk2sn_link";
-        private const int BuffAreaLayer = 28;
+        internal const string ConnectorBuildingId = "gk2sn_connector_p";
+        private const int BuffLayer = 28;
         private const float Height = 6f;
 
         private static readonly List<GameObject> areas = new List<GameObject>();
+        private static readonly HashSet<string> stationIds = new HashSet<string>();
+
+        internal static bool Active => areas.Count > 0;
+
+        internal static IReadOnlyCollection<string> StationIds => stationIds;
 
         internal static void Create(WorldZone zone)
         {
@@ -31,108 +40,22 @@ namespace GK2Mods.StorageNetwork
             foreach (SGuid guid in zoneData.wgoDataList)
             {
                 WgoData wgo = world.GetWgoData(guid);
-                if (!Network.IsLinkableStation(wgo))
-                {
-                    continue;
-                }
-                var go = new GameObject("GK2SN_LinkArea " + wgo.id) { layer = BuffAreaLayer };
-                // Same scene (and physics world) as the station the grid is drawn around.
-                Wgo view = GameScene.GetWgoViewGlobal(wgo.UniqueId);
-                if (view != null)
-                {
-                    UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, view.gameObject.scene);
-                }
-                go.transform.position = view != null ? view.transform.position : wgo.Position;
-                var box = go.AddComponent<BoxCollider>();
-                // Not a trigger: the build grid's overlap queries skip triggers, like the game's own BuildAreas.
-                box.isTrigger = false;
-                box.size = new Vector3(reach.x * 2f, Height, reach.y * 2f);
-                var area = go.AddComponent<BuildArea>();
-                area.collider = box;
-                area.id = AreaId;
-                areas.Add(go);
-            }
-            Physics.SyncTransforms();
-            Plugin.Debug($"Link areas: {areas.Count} station(s) in {zoneData.id}");
-            SelfCheck();
-        }
-
-        /// <summary>Runs the build grid's own overlap query next to the first station and logs what it sees.</summary>
-        private static void SelfCheck()
-        {
-            if (areas.Count == 0)
-            {
-                return;
-            }
-            GameObject first = areas[0];
-            Vector3 probe = first.transform.position + new Vector3(Network.LinkReach.x * 0.75f, 0f, 0f);
-            var hits = new Collider[64];
-            int n = Physics.OverlapBoxNonAlloc(probe, BuildConsts.CASTING_BOX_HALF_EXTENTS, hits, Quaternion.identity, 269091072);
-            bool found = false;
-            for (int i = 0; i < n; i++)
-            {
-                found |= hits[i] != null && hits[i].gameObject == first;
-            }
-            Plugin.Log.LogInfo($"Link areas self-check: area at {first.transform.position} (scene {first.scene.name}), " +
-                $"probe {probe} hits {n}, our area {(found ? "FOUND" : "NOT found")}, queriesHitTriggers={Physics.queriesHitTriggers}");
-        }
-
-        /// <summary>
-        /// Diagnostics for the placement rules: how the game sets up its own extensions (Crucible) and the
-        /// BuildAreas on the zone's stations, and what state the grid computes for a cell inside our area.
-        /// </summary>
-        internal static void Diagnose(BuildData buildData, WorldZone zone)
-        {
-            foreach (string id in new[] { "bucket_anvil_p", "furnace_bellows_1_p", "tool_rack_p", buildData?.Definition?.id })
-            {
-                BuildingDef d = id == null ? null : GameBalance.Me.GetDataOrNull<BuildingDef>(id);
-                if (d != null)
-                {
-                    Plugin.Log.LogInfo($"Diag def {d.id}: areaType={d.chooseCustomBuildAreaType} areaId='{d.customBuildAreaId}' fullCover={d.fullCoveringCount} tab={d.tab}");
-                }
-            }
-            WorldData world = MainGame.Instance?.GameSave?.WorldData;
-            if (zone?.Data == null || world == null)
-            {
-                return;
-            }
-            int logged = 0;
-            foreach (SGuid guid in zone.Data.wgoDataList)
-            {
-                Wgo view = GameScene.GetWgoViewGlobal(guid);
+                Wgo view = Network.IsLinkableStation(wgo) ? GameScene.GetWgoViewGlobal(wgo.UniqueId) : null;
                 if (view == null)
                 {
                     continue;
                 }
-                foreach (BuildArea area in view.GetComponentsInChildren<BuildArea>(true))
-                {
-                    Collider c = area.Collider ?? area.GetComponent<Collider>();
-                    Plugin.Log.LogInfo($"Diag area on {view.Data?.id}: id='{area.Id}' layer={area.gameObject.layer} active={area.gameObject.activeInHierarchy} " +
-                        $"trigger={c?.isTrigger} bounds={c?.bounds.size} fullCover={area.fullCoveringMode} ignorePointer={area.ignoreForPointerPlacement} " +
-                        $"forceShowBuff={area.foprceShowAsBuffAreaForPointerPlacement} path={Path(area.transform, view.transform)}");
-                    if (++logged >= 25)
-                    {
-                        return;
-                    }
-                }
+                var go = new GameObject("GK2SN_LinkReach") { layer = BuffLayer };
+                go.transform.SetParent(view.transform, false);
+                go.transform.position = view.transform.position;
+                go.transform.rotation = Quaternion.identity;
+                var box = go.AddComponent<BoxCollider>();
+                box.size = new Vector3(reach.x * 2f, Height, reach.y * 2f);
+                areas.Add(go);
+                stationIds.Add(wgo.id);
             }
-            if (areas.Count > 0 && buildData?.Definition != null)
-            {
-                Vector3 probe = areas[0].transform.position + new Vector3(Network.LinkReach.x * 0.75f, 0f, 0f);
-                BuildCellData cell = BuildCellData.GetData(probe, zone.Id, buildData.Definition);
-                Plugin.Log.LogInfo($"Diag cell at {probe}: state={cell.State} (1 empty, 2 available, 4 busy, 8 buff, 16/32 wgo, 64 buff usage)");
-            }
-        }
-
-        private static string Path(Transform t, Transform root)
-        {
-            string path = t.name;
-            while (t.parent != null && t != root)
-            {
-                t = t.parent;
-                path = t.name + "/" + path;
-            }
-            return path;
+            Physics.SyncTransforms();
+            Plugin.Debug($"Link reach: {areas.Count} station(s) in {zoneData.id}");
         }
 
         internal static void Clear()
@@ -141,22 +64,37 @@ namespace GK2Mods.StorageNetwork
             {
                 if (go != null)
                 {
+                    go.SetActive(false);
                     UnityEngine.Object.Destroy(go);
                 }
             }
             areas.Clear();
+            stationIds.Clear();
+        }
+
+        /// <summary>Logs the grid state of a cell inside the first station's reach (dev check).</summary>
+        internal static void Diagnose(BuildData buildData, WorldZone zone)
+        {
+            if (areas.Count == 0 || buildData?.Definition == null || zone == null)
+            {
+                return;
+            }
+            Vector3 probe = areas[0].transform.position + new Vector3(Network.LinkReach.x * 0.75f, 0f, 0f);
+            BuildCellData cell = BuildCellData.GetData(probe, zone.Id, buildData.Definition);
+            Plugin.Log.LogInfo($"Link reach check: {areas.Count} station(s); cell at {probe} state={cell.State} " +
+                $"(2 available, 4 busy, 8 blue reach) linked stations={cell.ExtensionList.Count}");
         }
     }
 
     [HarmonyPatch(typeof(BuildController), nameof(BuildController.EnableBuildMode))]
     internal static class BuildController_EnableBuildMode
     {
-        // Prefix: the grid is formed inside EnableBuildMode, so the areas must exist before it runs.
+        // Prefix: the pointer and the grid are set up inside EnableBuildMode, so the reach must exist first.
         private static void Prefix(BuildData buildData, WorldZone worldZone)
         {
             try
             {
-                if (buildData?.Definition?.customBuildAreaId == LinkAreas.AreaId)
+                if (buildData?.Definition?.id == LinkAreas.ConnectorBuildingId)
                 {
                     LinkAreas.Create(worldZone);
                 }
@@ -167,17 +105,13 @@ namespace GK2Mods.StorageNetwork
             }
             catch (Exception e)
             {
-                Plugin.Log.LogError($"Link areas failed: {e}");
+                Plugin.Log.LogError($"Link reach failed: {e}");
             }
         }
-    }
 
-    [HarmonyPatch(typeof(BuildController), nameof(BuildController.EnableBuildMode))]
-    internal static class BuildController_EnableBuildMode_Diag
-    {
         private static void Postfix(BuildData buildData, WorldZone worldZone)
         {
-            if (buildData?.Definition?.customBuildAreaId != LinkAreas.AreaId)
+            if (buildData?.Definition?.id != LinkAreas.ConnectorBuildingId)
             {
                 return;
             }
@@ -187,8 +121,23 @@ namespace GK2Mods.StorageNetwork
             }
             catch (Exception e)
             {
-                Plugin.Log.LogError($"Link areas diagnose failed: {e}");
+                Plugin.Log.LogError($"Link reach check failed: {e}");
             }
+        }
+    }
+
+    /// <summary>For a Connector the pointer would allow no buff areas (it is a plain chest underneath).</summary>
+    [HarmonyPatch(typeof(WgoBuildPointer), nameof(WgoBuildPointer.DoBuffDrawingLogic))]
+    internal static class WgoBuildPointer_DoBuffDrawingLogic
+    {
+        private static void Postfix(BuildingDef ___buildingDef)
+        {
+            if (___buildingDef?.id != LinkAreas.ConnectorBuildingId || !LinkAreas.Active)
+            {
+                return;
+            }
+            BuildGrid3D grid = LazySingleton<BuildManager>.Instance?.BuildController?.BuildLayout?.BuildGrid3D;
+            grid?.SetAllowedExtensionWgoIds(new HashSet<string>(LinkAreas.StationIds));
         }
     }
 

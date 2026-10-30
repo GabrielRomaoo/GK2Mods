@@ -144,13 +144,6 @@ namespace GK2Mods.StorageNetwork
                     def.buildResultIcon = s.Icon;
                 }
                 def.moveMod = BuildingDef.MoveMod.None;
-                if (s.Kind == StructureKind.Connector)
-                {
-                    // Like the Crucible next to a furnace: only placeable inside the blue areas that LinkAreas
-                    // puts around the zone's stations while a Connector is being placed.
-                    def.chooseCustomBuildAreaType = BuildingDef.BuildAreaChoosingType.Soft;
-                    def.customBuildAreaId = LinkAreas.AreaId;
-                }
                 if (s.Kind == StructureKind.Archive)
                 {
                     def.limitMax = 1;
