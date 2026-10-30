@@ -245,14 +245,24 @@ namespace GK2Mods.StorageNetwork
             {
                 string name = pt ? s.NamePt : s.NameEn;
                 string desc = pt ? s.DescPt : s.DescEn;
-                lang.dictionary[s.BuildingId] = name;
-                lang.dictionary[s.BuildingId + "_d"] = desc;
-                lang.dictionary[s.Tag] = name;
-                lang.dictionary[s.Tag + "_d"] = desc;
+                AddText(lang, s.BuildingId, name);
+                AddText(lang, s.BuildingId + "_d", desc);
+                AddText(lang, s.Tag, name);
+                AddText(lang, s.Tag + "_d", desc);
             }
-            lang.dictionary[UnlockNoticeKey] = pt
+            AddText(lang, UnlockNoticeKey, pt
                 ? "Novas construções: Relé de Zona e Conector"
-                : "New buildings: Zone Relay and Connector";
+                : "New buildings: Zone Relay and Connector");
+        }
+
+        /// <summary>
+        /// LLBase.L reads idsToMetaInfo[key] for every key found in dictionary (KeyNotFoundException otherwise,
+        /// which breaks whole windows such as the tech tree). Every text needs both entries.
+        /// </summary>
+        private static void AddText(LLBase lang, string key, string text)
+        {
+            lang.dictionary[key] = text;
+            lang.idsToMetaInfo[key] = new NestedLocalesMetaInfo();
         }
 
         private static BuildingDef CloneDef(BuildingDef template)
