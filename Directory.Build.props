@@ -1,0 +1,49 @@
+<Project>
+  <!-- Shared build settings for every Graveyard Keeper 2 mod in this repo. -->
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <DebugType>portable</DebugType>
+
+    <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Graveyard Keeper 2</GameDir>
+    <ManagedDir>$(GameDir)\GraveyardKeeper2_Data\Managed</ManagedDir>
+    <BepInExCore>$(GameDir)\BepInEx\core</BepInExCore>
+    <!-- Local test packs: the game copies them into BepInEx\plugins on launch (README_MODDING.txt, section 6). -->
+    <LocalModsDir>$(USERPROFILE)\AppData\LocalLow\Lazy Bear Games\Graveyard Keeper 2\Mods\Code</LocalModsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.2" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="BepInEx" HintPath="$(BepInExCore)\BepInEx.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(BepInExCore)\0Harmony.dll" Private="false" />
+    <Reference Include="Assembly-CSharp" HintPath="$(ManagedDir)\Assembly-CSharp.dll" Private="false" Publicize="true" />
+    <Reference Include="LazyBearTechnology" HintPath="$(ManagedDir)\LazyBearTechnology.dll" Private="false" Publicize="true" />
+    <Reference Include="UnityEngine" HintPath="$(ManagedDir)\UnityEngine.dll" Private="false" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(ManagedDir)\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(ManagedDir)\UnityEngine.InputLegacyModule.dll" Private="false" />
+    <Reference Include="UnityEngine.IMGUIModule" HintPath="$(ManagedDir)\UnityEngine.IMGUIModule.dll" Private="false" />
+    <Reference Include="netstandard" HintPath="$(ManagedDir)\netstandard.dll" Private="false" />
+  </ItemGroup>
+
+  <!-- Deploy: Mods\Code\<ModFolder>\BepInEx\plugins\<ModFolder>\ + modinfo.json -->
+  <Target Name="DeployLocalPack" AfterTargets="Build" Condition="'$(ModFolder)' != ''">
+    <PropertyGroup>
+      <PackDir>$(LocalModsDir)\$(ModFolder)</PackDir>
+      <PluginDir>$(PackDir)\BepInEx\plugins\$(ModFolder)</PluginDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(PluginDir)" />
+    <Copy SourceFiles="@(ModContent)" DestinationFolder="$(PluginDir)\%(RecursiveDir)" />
+    <WriteLinesToFile File="$(PackDir)\modinfo.json" Overwrite="true"
+      Lines="{;  &quot;schemaVersion&quot;: 1,;  &quot;id&quot;: &quot;$(ModId)&quot;,;  &quot;name&quot;: &quot;$(ModDisplayName)&quot;,;  &quot;version&quot;: &quot;$(Version)&quot;;}" />
+    <Message Importance="high" Text="Deployed $(ModFolder) $(Version) -> $(PackDir)" />
+  </Target>
+</Project>

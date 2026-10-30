@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Diagnostic plugin: writes building/tech/chest/item defs to JSON so mods can be designed on real data. -->
+  <PropertyGroup>
+    <AssemblyName>GK2DataDump</AssemblyName>
+    <Version>0.1.0</Version>
+    <ModFolder>GK2DataDump</ModFolder>
+    <ModId>gk2datadump</ModId>
+    <ModDisplayName>GK2 Data Dump (dev)</ModDisplayName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json" HintPath="$(ManagedDir)\Newtonsoft.Json.dll" Private="false" />
+  </ItemGroup>
+</Project>
