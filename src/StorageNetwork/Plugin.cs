@@ -29,7 +29,7 @@ namespace GK2Mods.StorageNetwork
             UnlockTech = Config.Bind("1 Unlock", "Tech", "tech_carved_wood",
                 "Technology (id) that unlocks the three structures. Default: Escultura em Madeira (Building tree), the one that also unlocks the Big Chest.");
             ArchiveCost = Config.Bind("2 Costs", "CentralArchive", "carved_wood:8,oiled_beam:4,detail_2_iron:4,bronze_gear:4",
-                "Materials for the Central Archive (item_id:count, comma separated). Read on game start.");
+                "Materials for the Central Storage (item_id:count, comma separated). Read on game start.");
             RelayCost = Config.Bind("2 Costs", "ZoneRelay", "oiled_plank:6,wooden_beam:2,detail_1_iron:4,bronze_gear:2",
                 "Materials for a Zone Relay.");
             ConnectorCost = Config.Bind("2 Costs", "Connector", "wooden_plank:4,nails_iron:4,bronze_gear:1",

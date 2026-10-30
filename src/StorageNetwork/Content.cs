@@ -39,7 +39,7 @@ namespace GK2Mods.StorageNetwork
             {
                 Kind = StructureKind.Archive, BuildingId = "gk2sn_archive_p", Tag = ArchiveTag,
                 TemplateBuildingId = "chest_good_place_p", Cost = () => Plugin.ArchiveCost.Value,
-                NamePt = "Arquivo Central", NameEn = "Central Archive",
+                NamePt = "Armazenamento Central", NameEn = "Central Storage",
                 DescPt = "Coração da Rede de Armazenamento. Os baús desta zona entram no estoque unificado. Só pode existir um. Também é um baú.",
                 DescEn = "Heart of the Storage Network. Chests in this zone join the shared stock. Only one can exist. Also works as a chest.",
             },
@@ -48,16 +48,16 @@ namespace GK2Mods.StorageNetwork
                 Kind = StructureKind.Relay, BuildingId = "gk2sn_relay_p", Tag = RelayTag,
                 TemplateBuildingId = "chest_place_p", Cost = () => Plugin.RelayCost.Value,
                 NamePt = "Relé de Zona", NameEn = "Zone Relay",
-                DescPt = "Liga os baús desta zona à rede do Arquivo Central. Sem um Arquivo construído, não faz nada. Também é um baú.",
-                DescEn = "Links the chests in this zone to the Central Archive's network. Does nothing until an Archive exists. Also works as a chest.",
+                DescPt = "Liga os baús desta zona à rede do Armazenamento Central. Sem um Armazenamento Central construído, não faz nada. Também é um baú.",
+                DescEn = "Links the chests in this zone to the Central Storage's network. Does nothing until a Central Storage exists. Also works as a chest.",
             },
             new Structure
             {
                 Kind = StructureKind.Connector, BuildingId = "gk2sn_connector_p", Tag = ConnectorTag,
                 TemplateBuildingId = "chest_rough_place_p", Cost = () => Plugin.ConnectorCost.Value,
                 NamePt = "Conector", NameEn = "Connector",
-                DescPt = "Coloque ao lado de uma bancada ou estação: ela passa a usar materiais de todos os baús da rede. A zona precisa de um Arquivo Central ou Relé.",
-                DescEn = "Place next to a workbench or station so it can use materials from every chest in the network. The zone needs a Central Archive or Relay.",
+                DescPt = "Coloque ao lado de uma bancada ou estação: ela passa a usar materiais de todos os baús da rede. A zona precisa de um Armazenamento Central ou Relé.",
+                DescEn = "Place next to a workbench or station so it can use materials from every chest in the network. The zone needs a Central Storage or Relay.",
             },
         };
 

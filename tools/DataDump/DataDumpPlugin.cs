@@ -34,6 +34,7 @@ namespace GK2Mods.DataDump
             {
                 balanceDumped = true;
                 Try("balance", DumpBalance);
+                Try("sprites", DumpSprites);
             }
             if (Input.GetKeyDown(KeyCode.F9))
             {
@@ -127,6 +128,72 @@ namespace GK2Mods.DataDump
                 type = i.type.ToString(),
                 i.stackCount,
             }));
+        }
+
+        private static readonly System.Text.RegularExpressions.Regex SpriteMotifs =
+            new System.Text.RegularExpressions.Regex("gear|chain|link|lock|key|rune|chest|crate|box|storage|pallet|rope|bell|lantern|compass|pipe|seal|^i_b_|header|frame|slot_bg|icon_bg",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        /// <summary>All sprite names, plus PNGs of building icons and a few motifs, for designing new icons.</summary>
+        private void DumpSprites()
+        {
+            var collection = LazySingletonSO<EasySpritesCollection>.Instance;
+            if (!EasySpritesCollection.isInitialized)
+            {
+                collection.Initialize();
+            }
+            List<string> names = collection.hash.Keys.OrderBy(n => n).ToList();
+            File.WriteAllLines(Path.Combine(dumpDir, "sprite_names.txt"), names.Select(n => n + "	" + collection.hash[n]));
+
+            string dir = Path.Combine(dumpDir, "sprites");
+            Directory.CreateDirectory(dir);
+            int ok = 0, failed = 0;
+            foreach (string name in names.Where(n => SpriteMotifs.IsMatch(n)))
+            {
+                try
+                {
+                    Sprite sprite = collection.GetSprite(name);
+                    if (sprite == null)
+                    {
+                        continue;
+                    }
+                    File.WriteAllBytes(Path.Combine(dir, name + ".png"), SpriteToPng(sprite));
+                    ok++;
+                }
+                catch (Exception e)
+                {
+                    failed++;
+                    if (failed <= 5)
+                    {
+                        Logger.LogWarning($"Sprite {name}: {e.Message}");
+                    }
+                }
+            }
+            Logger.LogInfo($"Sprites: {names.Count} names, {ok} exported, {failed} failed");
+        }
+
+        private static byte[] SpriteToPng(Sprite sprite)
+        {
+            Texture2D atlas = sprite.texture;
+            Rect r = sprite.textureRect;
+            RenderTexture rt = RenderTexture.GetTemporary(atlas.width, atlas.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                Graphics.Blit(atlas, rt);
+                RenderTexture.active = rt;
+                var output = new Texture2D(Mathf.RoundToInt(r.width), Mathf.RoundToInt(r.height), TextureFormat.RGBA32, false);
+                output.ReadPixels(new Rect(r.x, r.y, r.width, r.height), 0, 0);
+                output.Apply();
+                byte[] png = output.EncodeToPNG();
+                UnityEngine.Object.Destroy(output);
+                return png;
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                RenderTexture.ReleaseTemporary(rt);
+            }
         }
 
         private void DumpSave()
