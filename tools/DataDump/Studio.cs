@@ -21,6 +21,7 @@ namespace GK2Mods.DataDump
         internal static readonly string[] DefaultIds =
         {
             "chest_good", "chest_good@central_storage", "chest_good@central_storage@v",
+            "chest", "chest@zone_relay", "chest@zone_relay@v", "chest_rough", "chest_rough@connector", "chest_rough@connector@v",
         };
 
         private const float FixedOrthoSize = 0.75f;

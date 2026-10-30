@@ -35,6 +35,7 @@ namespace GK2Mods.DataDump
                 balanceDumped = true;
                 Try("balance", DumpBalance);
                 Try("sprites", DumpSprites);
+                Try("locale", DumpLocale);
                 StartCoroutine(new Studio(Logger, dumpDir).Run(Studio.DefaultIds));
             }
             if (Input.GetKeyDown(KeyCode.F9))
@@ -246,6 +247,26 @@ namespace GK2Mods.DataDump
                 atlas.filterMode = oldFilter;
                 RenderTexture.active = previous;
                 RenderTexture.ReleaseTemporary(rt);
+            }
+        }
+
+        /// <summary>The whole current language dictionary, plus a few keys checked by hand.</summary>
+        private void DumpLocale()
+        {
+            LLBase lang = LLBase.currentLang;
+            if (lang == null)
+            {
+                Logger.LogWarning("No language loaded.");
+                return;
+            }
+            Write("locale_" + lang.id + ".json", lang.dictionary);
+            foreach (KeyValuePair<string, string> entry in lang.dictionary.Where(e => e.Value != null && e.Value.IndexOf("Wood Church", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                Logger.LogInfo($"Locale value 'Wood Church': {entry.Key} = {entry.Value}");
+            }
+            foreach (string key in new[] { "chest_good_place", "chest_place", "chest_rough_place", "chest_good", "chest_rough", "chest", "gk2sn_archive_p", "gk2sn_relay_p", "gk2sn_connector_p" })
+            {
+                Logger.LogInfo($"Locale L({key}) = {LLBase.L(key)}");
             }
         }
 

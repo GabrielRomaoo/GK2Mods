@@ -271,3 +271,40 @@ namespace GK2Mods.StorageNetwork
         }
     }
 }
+
+namespace GK2Mods.StorageNetwork
+{
+    /// <summary>
+    /// The info panel shown when pointing at an object (finished or under construction) names it after its
+    /// WGO id, i.e. the template chest. Tagged objects get their own name, description and icon instead.
+    /// </summary>
+    [HarmonyPatch]
+    internal static class UIInfoWidgetData_Ctors
+    {
+        private static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Constructor(typeof(UIInfoWidgetData), new[] { typeof(WgoData), typeof(string), typeof(bool) });
+            yield return AccessTools.Constructor(typeof(UIInfoWidgetData), new[] { typeof(WgoData), typeof(CraftDef), typeof(bool) });
+        }
+
+        private static void Postfix(UIInfoWidgetData __instance, WgoData wgoData, MethodBase __originalMethod)
+        {
+            string tag = wgoData?.CustomTag;
+            if (!Content.IsOurTag(tag))
+            {
+                return;
+            }
+            __instance.Header = LLBase.L(tag);
+            // The craft variant describes the craft in progress (the construction); keep that text.
+            if (__originalMethod.GetParameters()[1].ParameterType == typeof(string))
+            {
+                __instance.Description = LLBase.L(tag + "_d");
+            }
+            string icon = Content.IconForTag(tag);
+            if (icon != null)
+            {
+                __instance.Icon = LazySingletonSO<EasySpritesCollection>.Instance.GetSprite(icon);
+            }
+        }
+    }
+}

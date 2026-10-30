@@ -1,5 +1,8 @@
-"""Central Storage model: an archivist's console (card-catalog drawers, a sloped control desk and a back
-panel with two round blue-glass "monitors" showing the network), in the game's low-poly pixel-art style.
+"""Storage Network world models, in the game's low-poly pixel-art style:
+  central_storage  an archivist's console: card-catalog drawers, a sloped control desk and a leaning panel
+                   with two round blue-glass "monitors" showing the network
+  zone_relay       a transmission column: iron-bound crate, wooden mast with brass rings, beacon with waves
+  connector        a junction box: riveted iron, brass gauge, blue node pane, two brass pipes
 
 The model is built from boxes and a wedge, measured in texels (the game maps 50 texels per world unit,
 material _Scale = 50). Every visible face gets its own pixel-art texture, packed into one atlas.
@@ -9,7 +12,7 @@ Outputs (consumed by the mod's ModelLoader):
   src/StorageNetwork/Models/<name>.png    atlas
 and, if a folder is given, a quick orthographic preview at the game's camera pitch (53.13 degrees).
 
-Usage: python console_model.py [preview_dir]
+Usage: python build_models.py [preview_dir]
 """
 import json
 import math
@@ -266,6 +269,108 @@ def tex_pipe(w, h):
     return t.img
 
 
+def tex_crate_front(w, h):
+    """Relay base: horizontal planks, two iron bands, brass lock plate (it is still a chest)."""
+    t = Tex(w, h, WOOD)
+    t.planks_h(0, 0, w - 1, h - 1, 3)
+    for bx in (w // 4, w - w // 4 - 1):
+        t.rect(bx - 1, 0, bx, h - 1, IRON)
+        t.rect(bx - 1, 0, bx - 1, h - 1, IRON_MID)
+        t.set(bx, 1, IRON_LIGHT)
+        t.set(bx, h - 3, IRON_LIGHT)
+    cx = w // 2
+    t.rect(cx - 2, 1, cx + 1, 5, OUTLINE)
+    t.rect(cx - 1, 2, cx, 4, BRASS)
+    t.set(cx - 1, 2, BRASS_LIGHT)
+    t.frame(0, 0, w - 1, h - 1, WOOD_HI, WOOD_DEEP)
+    return t.img
+
+
+def tex_crate_top(w, h):
+    t = Tex(w, h, WOOD)
+    t.planks_v(0, 0, w - 1, h - 1, 4)
+    for by in (1, h - 3):
+        t.rect(0, by, w - 1, by + 1, IRON)
+        t.rect(0, by, w - 1, by, IRON_MID)
+    t.frame(0, 0, w - 1, h - 1, WOOD_HI, WOOD_DEEP)
+    return t.img
+
+
+def tex_mast(w, h):
+    """Wooden post with brass rings."""
+    t = Tex(w, h, WOOD)
+    t.planks_v(0, 0, w - 1, h - 1, max(w, 2))
+    for y in range(2, h, 6):
+        t.rect(0, y, w - 1, y + 1, BRASS)
+        t.rect(0, y, w - 1, y, BRASS_LIGHT)
+    return t.img
+
+
+def tex_beacon_front(w, h):
+    """Iron housing with a round blue glass showing signal waves rising from a hub."""
+    t = Tex(w, h, IRON)
+    t.frame(0, 0, w - 1, h - 1, IRON_MID, IRON_DARK)
+    for x, y in ((1, 1), (w - 2, 1), (1, h - 2), (w - 2, h - 2)):
+        t.set(x, y, IRON_LIGHT)
+    cx, cy = w / 2, h / 2
+    r = min(w, h) / 2 - 1.5
+    t.disc(cx, cy, r + 0.9, OUTLINE)
+    t.ring(cx, cy, r + 0.4, BRASS, 1.0)
+    t.disc(cx, cy, r - 0.6, GLASS_DEEP)
+    t.disc(cx - 0.4, cy - 0.4, r - 1.4, GLASS)
+    hx, hy = cx, cy + r * 0.45
+    for k, rad in enumerate((r * 0.45, r * 0.85)):
+        for y in range(t.h):
+            for x in range(t.w):
+                d = math.hypot(x + 0.5 - hx, y + 0.5 - hy)
+                a = math.degrees(math.atan2(y + 0.5 - hy, x + 0.5 - hx)) % 360
+                inside = (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 < (r - 0.8) ** 2
+                if abs(d - rad) <= 0.5 and 215 <= a <= 325 and inside:
+                    t.set(x, y, GLASS_HI if k else GLASS_LIGHT)
+    t.rect(int(hx) - 1, int(hy) - 1, int(hx), int(hy), GLASS_HI)
+    return t.img
+
+
+def tex_iron_cap(w, h):
+    t = Tex(max(w, 1), max(h, 1), IRON)
+    t.frame(0, 0, t.w - 1, t.h - 1, IRON_LIGHT, IRON_DARK)
+    return t.img
+
+
+def tex_junction_front(w, h):
+    """Riveted iron plate: brass gauge on the left, blue node pane on the right, brass label plate."""
+    t = Tex(w, h, IRON)
+    t.frame(0, 0, w - 1, h - 1, IRON_MID, IRON_DARK)
+    for x, y in ((1, 1), (w - 2, 1), (1, h - 2), (w - 2, h - 2)):
+        t.set(x, y, IRON_LIGHT)
+    gx, gy = 6.5, h / 2
+    gr = min(4.2, h / 2 - 1.5)
+    t.disc(gx, gy, gr + 0.9, OUTLINE)
+    t.ring(gx, gy, gr + 0.4, BRASS, 1.0)
+    t.disc(gx, gy, gr - 0.6, PAPER)
+    t.line(int(gx), int(gy), int(gx + 2), int(gy - 2), RED_KNOB)
+    t.set(int(gx), int(gy), OUTLINE)
+    px0, py0 = w - 11, int(h / 2) - 4
+    t.rect(px0, py0, px0 + 8, py0 + 7, OUTLINE)
+    t.rect(px0 + 1, py0 + 1, px0 + 7, py0 + 6, GLASS)
+    t.rect(px0 + 1, py0 + 1, px0 + 7, py0 + 1, GLASS_MID)
+    t.line(px0 + 2, py0 + 5, px0 + 4, py0 + 3, GLASS_LIGHT)
+    t.line(px0 + 4, py0 + 3, px0 + 6, py0 + 5, GLASS_LIGHT)
+    for x, y in ((px0 + 4, py0 + 3), (px0 + 2, py0 + 5), (px0 + 6, py0 + 5)):
+        t.set(x, y, GLASS_HI)
+    t.rect(12, h - 4, w - 13, h - 3, BRASS)
+    t.rect(12, h - 4, w - 13, h - 4, BRASS_LIGHT)
+    return t.img
+
+
+def tex_junction_top(w, h):
+    t = Tex(w, h, IRON)
+    t.frame(0, 0, w - 1, h - 1, IRON_LIGHT, IRON_DARK)
+    for x in range(2, w - 2, 4):
+        t.set(x, 1, IRON_MID)
+    return t.img
+
+
 # ----------------------------------------------------------------------------------------- geometry
 PITCH = math.radians(53.130104)
 CAM_UP = (0.0, math.cos(PITCH), math.sin(PITCH))
@@ -336,6 +441,44 @@ def build_central_storage(width=W):
     # pipes from the panel's sides down to the ground
     for x in (-hw - 2, hw):
         m.box(x, x + 2, 0, top_y - 4, 6, 8, front=tex_pipe)
+    return m
+
+
+def build_zone_relay(width=28):
+    """width: 28 for the chest's horizontal footprint (0.64), 22 for the vertical one (0.50)."""
+    m = Model()
+    hw = width / 2
+    crate_h = 16
+    m.box(-hw, hw, 0, crate_h, -8, 8, front=tex_crate_front, top=tex_crate_top,
+          left=tex_side, right=tex_side)
+    # mast behind the lid; the beacon plate leans back so its round glass reads round on screen
+    m.box(-1.5, 1.5, crate_h, 40, 3, 6, front=tex_mast, left=tex_mast, right=tex_mast)
+    bw = 8 if width >= 26 else 7
+    lean = math.radians(40)
+    plate = 17
+    y0, z0 = 36, 1
+    y1, z1 = y0 + plate * math.cos(lean), z0 + plate * math.sin(lean)
+    m.quad([(-bw, y0, z0), (bw, y0, z0), (bw, y1, z1), (-bw, y1, z1)], tex_beacon_front)
+    m.quad([(-bw, y1, z1), (bw, y1, z1), (bw, y1, z1 + 3), (-bw, y1, z1 + 3)], tex_iron_cap)
+    m.quad([(-bw, y0 - 2, z0), (bw, y0 - 2, z0), (bw, y0, z0), (-bw, y0, z0)], tex_iron_cap)
+    return m
+
+
+def build_connector(width=24):
+    """width: 24 for the rough chest's horizontal footprint (0.64), 20 for the vertical one (0.50)."""
+    m = Model()
+    hw = width / 2
+    box_h = 22
+    m.box(-hw, hw, 0, box_h, -4, 4, front=tex_junction_front, top=tex_junction_top,
+          left=tex_iron_cap, right=tex_iron_cap)
+    # two brass pipes out of the top joined by a manifold: the link to the network
+    top = box_h + 12
+    xs = (-hw + 3, hw - 5)
+    for x in xs:
+        m.box(x, x + 2, box_h, top, -1, 1, front=tex_pipe, left=tex_pipe, right=tex_pipe)
+        m.box(x - 1, x + 3, box_h, box_h + 2, -2, 2, front=tex_iron_cap, top=tex_iron_cap)
+    m.box(xs[0] - 1, xs[1] + 3, top - 1, top + 2, -2, 2, front=tex_desk_lip, top=tex_iron_cap,
+          left=tex_iron_cap, right=tex_iron_cap)
     return m
 
 
@@ -442,5 +585,9 @@ def render_preview(model, scale=10):
 if __name__ == "__main__":
     preview = sys.argv[1] if len(sys.argv) > 1 else None
     export("central_storage", build_central_storage(), preview)
-    # The vertical orientation is the chest turned a quarter; the console stays facing the camera, narrower.
+    # The vertical orientation is the chest turned a quarter; the models stay facing the camera, narrower.
     export("central_storage_v", build_central_storage(26), preview)
+    export("zone_relay", build_zone_relay(), preview)
+    export("zone_relay_v", build_zone_relay(22), preview)
+    export("connector", build_connector(), preview)
+    export("connector_v", build_connector(20), preview)

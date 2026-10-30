@@ -22,6 +22,8 @@ namespace GK2Mods.StorageNetwork
         private static readonly Dictionary<string, string> ModelByTag = new Dictionary<string, string>
         {
             [Content.ArchiveTag] = "central_storage",
+            [Content.RelayTag] = "zone_relay",
+            [Content.ConnectorTag] = "connector",
         };
 
         private static readonly Dictionary<string, (Mesh mesh, Texture2D atlas)> cache = new Dictionary<string, (Mesh, Texture2D)>();

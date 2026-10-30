@@ -77,6 +77,9 @@ namespace GK2Mods.StorageNetwork
         internal static string TagForBuilding(string buildingId) =>
             Structures.FirstOrDefault(s => s.BuildingId == buildingId)?.Tag;
 
+        internal static string IconForTag(string tag) =>
+            Structures.FirstOrDefault(s => s.Tag == tag)?.Icon;
+
         internal const string ArchiveBuildingId = "gk2sn_archive_p";
         internal const string UnlockNoticeKey = "gk2sn_unlock_notice";
         private static readonly string[] FollowUpBuildingIds = { "gk2sn_relay_p", "gk2sn_connector_p" };
