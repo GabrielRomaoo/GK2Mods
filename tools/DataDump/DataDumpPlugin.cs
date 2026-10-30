@@ -195,6 +195,23 @@ namespace GK2Mods.DataDump
                     File.WriteAllBytes(Path.Combine(dir, name + ".png"), SpriteToPng(sprite));
                 }
             }
+            // How UI images will size these: Unity's padding/UVs for a vanilla icon vs ours.
+            foreach (string name in new[] { "i_b_chest_3", "i_b_chest_1", "gk2sn_icon_central_storage" })
+            {
+                Sprite sprite = collection.GetSprite(name);
+                if (sprite == null)
+                {
+                    continue;
+                }
+                Vector4 padding = UnityEngine.Sprites.DataUtility.GetPadding(sprite);
+                Logger.LogInfo($"UI sprite {name}: rect {sprite.rect} textureRect {sprite.textureRect} offset {sprite.textureRectOffset} padding {padding} packed {sprite.packed} mode {(sprite.packed ? sprite.packingMode.ToString() : "-")}");
+            }
+            foreach (LinkedEntityWidget widget in Resources.FindObjectsOfTypeAll<LinkedEntityWidget>().Take(3))
+            {
+                UnityEngine.UI.Image img = widget.icon;
+                RectTransform rt = img.rectTransform;
+                Logger.LogInfo($"UI LinkedEntityWidget '{widget.name}': icon size {rt.rect.size} sizeDelta {rt.sizeDelta} preserveAspect {img.preserveAspect} useSpriteMesh {img.useSpriteMesh} type {img.type} ppuMul {img.pixelsPerUnitMultiplier}");
+            }
             Write("sprites_meta.json", meta);
             Logger.LogInfo($"Sprites: {names.Count} names, {ok} exported, {failed} failed");
         }
