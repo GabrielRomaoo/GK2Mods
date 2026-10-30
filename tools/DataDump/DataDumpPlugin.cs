@@ -25,7 +25,11 @@ namespace GK2Mods.DataDump
             dumpDir = Path.Combine(Paths.BepInExRootPath, "dumps");
             Directory.CreateDirectory(dumpDir);
             startTime = Time.realtimeSinceStartup;
+            RenderStudio = Config.Bind("Dev", "RenderStudio", false,
+                "Export sprites and render prefabs/models at the main menu. Breaks chest UI clicks for that session: dev only.");
         }
+
+        private BepInEx.Configuration.ConfigEntry<bool> RenderStudio;
 
         private void Update()
         {
@@ -34,9 +38,14 @@ namespace GK2Mods.DataDump
             {
                 balanceDumped = true;
                 Try("balance", DumpBalance);
-                Try("sprites", DumpSprites);
                 Try("locale", DumpLocale);
-                StartCoroutine(new Studio(Logger, dumpDir).Run(Studio.DefaultIds));
+                // Sprites and the studio instantiate/touch game objects; with them on, chest item clicks broke for
+                // the rest of the session (30/10). Opt-in only, never in a play session.
+                if (RenderStudio.Value)
+                {
+                    Try("sprites", DumpSprites);
+                    StartCoroutine(new Studio(Logger, dumpDir).Run(Studio.DefaultIds));
+                }
             }
             if (Input.GetKeyDown(KeyCode.F9))
             {
@@ -129,6 +138,10 @@ namespace GK2Mods.DataDump
                 name = Name(i.id),
                 type = i.type.ToString(),
                 i.stackCount,
+                groups = i.itemGroupIds,
+                i.sortOrder,
+                i.iconId,
+                quality = i.qualityType.ToString(),
             }));
         }
 

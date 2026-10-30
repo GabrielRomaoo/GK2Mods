@@ -259,6 +259,11 @@ namespace GK2Mods.StorageNetwork
             AddText(lang, Fixtures.ConnectorInfoKey, pt
                 ? "Conector: as bancadas no alcance dele usam materiais da rede."
                 : "Connector: stations within its reach use materials from the network.");
+            AddText(lang, CentralPanel.HeaderKey, pt ? "Estoque da Rede" : "Network Stock");
+            foreach (Categories.Category c in Categories.All)
+            {
+                AddText(lang, c.Key, pt ? c.Pt : c.En);
+            }
         }
 
         /// <summary>
