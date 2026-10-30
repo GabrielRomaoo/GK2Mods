@@ -49,7 +49,7 @@ namespace GK2Mods.StorageNetwork
             Assembly asm = typeof(Icons).Assembly;
             foreach (string resource in asm.GetManifestResourceNames())
             {
-                if (!resource.EndsWith(".png"))
+                if (!resource.EndsWith(".png") || !resource.Contains(".Icons."))
                 {
                     continue;
                 }

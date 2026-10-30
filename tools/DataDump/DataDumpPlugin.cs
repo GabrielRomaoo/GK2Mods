@@ -35,6 +35,7 @@ namespace GK2Mods.DataDump
                 balanceDumped = true;
                 Try("balance", DumpBalance);
                 Try("sprites", DumpSprites);
+                StartCoroutine(new Studio(Logger, dumpDir).Run(Studio.DefaultIds));
             }
             if (Input.GetKeyDown(KeyCode.F9))
             {
