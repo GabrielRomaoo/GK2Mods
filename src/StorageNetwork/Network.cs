@@ -70,16 +70,47 @@ namespace GK2Mods.StorageNetwork
             {
                 return false;
             }
-            float radius = Plugin.ConnectorRadiusCells.Value * BuildConsts.CELL_SIZE.x;
+            Vector2 reach = LinkReach;
             Vector2 pos = Flat(station.Position);
             foreach (Vector2 connector in connectors)
             {
-                if ((connector - pos).sqrMagnitude <= radius * radius)
+                if (Mathf.Abs(connector.x - pos.x) <= reach.x && Mathf.Abs(connector.y - pos.y) <= reach.y)
                 {
                     return true;
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Half-size (x, z) of the square around a station where a Connector links it: N build cells each way.
+        /// The blue placement areas (LinkAreas) use the same square, so what shows blue is what works.
+        /// </summary>
+        internal static Vector2 LinkReach =>
+            new Vector2(Plugin.ConnectorRadiusCells.Value * BuildConsts.CELL_SIZE.x, Plugin.ConnectorRadiusCells.Value * BuildConsts.CELL_SIZE.y);
+
+        /// <summary>Objects a Connector can link: crafting stations (benches, furnaces, anvils, kilns, alchemy, morgue).</summary>
+        internal static bool IsLinkableStation(WgoData wgo)
+        {
+            WGODef def = wgo?.Definition;
+            if (def == null || wgo is ZombieWgoData || wgo.CraftComponent == null)
+            {
+                return false;
+            }
+            switch (def.interactionType)
+            {
+                case WGODef.InteractionType.Craft:
+                case WGODef.InteractionType.Alchemy:
+                case WGODef.InteractionType.Autopsy:
+                case WGODef.InteractionType.Embalm:
+                case WGODef.InteractionType.Crematorium:
+                    break;
+                default:
+                    return false;
+            }
+            string id = wgo.id;
+            return !id.StartsWith("test", StringComparison.Ordinal) && !id.Contains("broken")
+                && !id.Contains("blockage") && !id.Contains("repairing") && !id.EndsWith("_place", StringComparison.Ordinal);
         }
 
         private static Vector2 Flat(Vector3 p) => new Vector2(p.x, p.z);
