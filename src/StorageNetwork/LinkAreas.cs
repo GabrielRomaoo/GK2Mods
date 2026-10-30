@@ -77,6 +77,64 @@ namespace GK2Mods.StorageNetwork
                 $"probe {probe} hits {n}, our area {(found ? "FOUND" : "NOT found")}, queriesHitTriggers={Physics.queriesHitTriggers}");
         }
 
+        /// <summary>
+        /// Diagnostics for the placement rules: how the game sets up its own extensions (Crucible) and the
+        /// BuildAreas on the zone's stations, and what state the grid computes for a cell inside our area.
+        /// </summary>
+        internal static void Diagnose(BuildData buildData, WorldZone zone)
+        {
+            foreach (string id in new[] { "bucket_anvil_p", "furnace_bellows_1_p", "tool_rack_p", buildData?.Definition?.id })
+            {
+                BuildingDef d = id == null ? null : GameBalance.Me.GetDataOrNull<BuildingDef>(id);
+                if (d != null)
+                {
+                    Plugin.Log.LogInfo($"Diag def {d.id}: areaType={d.chooseCustomBuildAreaType} areaId='{d.customBuildAreaId}' fullCover={d.fullCoveringCount} tab={d.tab}");
+                }
+            }
+            WorldData world = MainGame.Instance?.GameSave?.WorldData;
+            if (zone?.Data == null || world == null)
+            {
+                return;
+            }
+            int logged = 0;
+            foreach (SGuid guid in zone.Data.wgoDataList)
+            {
+                Wgo view = GameScene.GetWgoViewGlobal(guid);
+                if (view == null)
+                {
+                    continue;
+                }
+                foreach (BuildArea area in view.GetComponentsInChildren<BuildArea>(true))
+                {
+                    Collider c = area.Collider ?? area.GetComponent<Collider>();
+                    Plugin.Log.LogInfo($"Diag area on {view.Data?.id}: id='{area.Id}' layer={area.gameObject.layer} active={area.gameObject.activeInHierarchy} " +
+                        $"trigger={c?.isTrigger} bounds={c?.bounds.size} fullCover={area.fullCoveringMode} ignorePointer={area.ignoreForPointerPlacement} " +
+                        $"forceShowBuff={area.foprceShowAsBuffAreaForPointerPlacement} path={Path(area.transform, view.transform)}");
+                    if (++logged >= 25)
+                    {
+                        return;
+                    }
+                }
+            }
+            if (areas.Count > 0 && buildData?.Definition != null)
+            {
+                Vector3 probe = areas[0].transform.position + new Vector3(Network.LinkReach.x * 0.75f, 0f, 0f);
+                BuildCellData cell = BuildCellData.GetData(probe, zone.Id, buildData.Definition);
+                Plugin.Log.LogInfo($"Diag cell at {probe}: state={cell.State} (1 empty, 2 available, 4 busy, 8 buff, 16/32 wgo, 64 buff usage)");
+            }
+        }
+
+        private static string Path(Transform t, Transform root)
+        {
+            string path = t.name;
+            while (t.parent != null && t != root)
+            {
+                t = t.parent;
+                path = t.name + "/" + path;
+            }
+            return path;
+        }
+
         internal static void Clear()
         {
             foreach (GameObject go in areas)
@@ -110,6 +168,26 @@ namespace GK2Mods.StorageNetwork
             catch (Exception e)
             {
                 Plugin.Log.LogError($"Link areas failed: {e}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(BuildController), nameof(BuildController.EnableBuildMode))]
+    internal static class BuildController_EnableBuildMode_Diag
+    {
+        private static void Postfix(BuildData buildData, WorldZone worldZone)
+        {
+            if (buildData?.Definition?.customBuildAreaId != LinkAreas.AreaId)
+            {
+                return;
+            }
+            try
+            {
+                LinkAreas.Diagnose(buildData, worldZone);
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.LogError($"Link areas diagnose failed: {e}");
             }
         }
     }
