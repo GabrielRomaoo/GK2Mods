@@ -36,9 +36,16 @@ namespace GK2Mods.StorageNetwork
                     continue;
                 }
                 var go = new GameObject("GK2SN_LinkArea " + wgo.id) { layer = BuffAreaLayer };
-                go.transform.position = wgo.Position;
+                // Same scene (and physics world) as the station the grid is drawn around.
+                Wgo view = GameScene.GetWgoViewGlobal(wgo.UniqueId);
+                if (view != null)
+                {
+                    UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, view.gameObject.scene);
+                }
+                go.transform.position = view != null ? view.transform.position : wgo.Position;
                 var box = go.AddComponent<BoxCollider>();
-                box.isTrigger = true;
+                // Not a trigger: the build grid's overlap queries skip triggers, like the game's own BuildAreas.
+                box.isTrigger = false;
                 box.size = new Vector3(reach.x * 2f, Height, reach.y * 2f);
                 var area = go.AddComponent<BuildArea>();
                 area.collider = box;
@@ -47,6 +54,27 @@ namespace GK2Mods.StorageNetwork
             }
             Physics.SyncTransforms();
             Plugin.Debug($"Link areas: {areas.Count} station(s) in {zoneData.id}");
+            SelfCheck();
+        }
+
+        /// <summary>Runs the build grid's own overlap query next to the first station and logs what it sees.</summary>
+        private static void SelfCheck()
+        {
+            if (areas.Count == 0)
+            {
+                return;
+            }
+            GameObject first = areas[0];
+            Vector3 probe = first.transform.position + new Vector3(Network.LinkReach.x * 0.75f, 0f, 0f);
+            var hits = new Collider[64];
+            int n = Physics.OverlapBoxNonAlloc(probe, BuildConsts.CASTING_BOX_HALF_EXTENTS, hits, Quaternion.identity, 269091072);
+            bool found = false;
+            for (int i = 0; i < n; i++)
+            {
+                found |= hits[i] != null && hits[i].gameObject == first;
+            }
+            Plugin.Log.LogInfo($"Link areas self-check: area at {first.transform.position} (scene {first.scene.name}), " +
+                $"probe {probe} hits {n}, our area {(found ? "FOUND" : "NOT found")}, queriesHitTriggers={Physics.queriesHitTriggers}");
         }
 
         internal static void Clear()

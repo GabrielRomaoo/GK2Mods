@@ -33,6 +33,8 @@
     <Reference Include="UnityEngine.IMGUIModule" HintPath="$(ManagedDir)\UnityEngine.IMGUIModule.dll" Private="false" />
     <Reference Include="UnityEngine.ImageConversionModule" HintPath="$(ManagedDir)\UnityEngine.ImageConversionModule.dll" Private="false" />
     <Reference Include="UnityEngine.PhysicsModule" HintPath="$(ManagedDir)\UnityEngine.PhysicsModule.dll" Private="false" />
+    <!-- Wgo derives from Odin's SerializedMonoBehaviour -->
+    <Reference Include="Sirenix.Serialization" HintPath="$(ManagedDir)\Sirenix.Serialization.dll" Private="false" />
     <Reference Include="netstandard" HintPath="$(ManagedDir)\netstandard.dll" Private="false" />  </ItemGroup>
 
   <!-- Deploy: Mods\Code\<ModFolder>\BepInEx\plugins\<ModFolder>\ + modinfo.json -->
