@@ -131,7 +131,7 @@ namespace GK2Mods.DataDump
         }
 
         private static readonly System.Text.RegularExpressions.Regex SpriteMotifs =
-            new System.Text.RegularExpressions.Regex("gear|chain|link|lock|key|rune|chest|crate|box|storage|pallet|rope|bell|lantern|compass|pipe|seal|^i_b_|header|frame|slot_bg|icon_bg",
+            new System.Text.RegularExpressions.Regex("^i_b_|^i_bronze_gear$|^i_p-gearmaster$|^i_detail|^i_details",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
         /// <summary>All sprite names, plus PNGs of building icons and a few motifs, for designing new icons.</summary>
@@ -148,6 +148,7 @@ namespace GK2Mods.DataDump
             string dir = Path.Combine(dumpDir, "sprites");
             Directory.CreateDirectory(dir);
             int ok = 0, failed = 0;
+            var meta = new List<object>();
             foreach (string name in names.Where(n => SpriteMotifs.IsMatch(n)))
             {
                 try
@@ -158,6 +159,20 @@ namespace GK2Mods.DataDump
                         continue;
                     }
                     File.WriteAllBytes(Path.Combine(dir, name + ".png"), SpriteToPng(sprite));
+                    meta.Add(new
+                    {
+                        name,
+                        atlas = collection.hash[name],
+                        rect = new[] { sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height },
+                        textureRect = new[] { sprite.textureRect.x, sprite.textureRect.y, sprite.textureRect.width, sprite.textureRect.height },
+                        pivot = new[] { sprite.pivot.x, sprite.pivot.y },
+                        sprite.pixelsPerUnit,
+                        border = new[] { sprite.border.x, sprite.border.y, sprite.border.z, sprite.border.w },
+                        packed = sprite.packed,
+                        rotation = sprite.packed ? sprite.packingRotation.ToString() : "",
+                        atlasSize = new[] { sprite.texture.width, sprite.texture.height },
+                        filter = sprite.texture.filterMode.ToString(),
+                    });
                     ok++;
                 }
                 catch (Exception e)
@@ -169,21 +184,40 @@ namespace GK2Mods.DataDump
                     }
                 }
             }
+            // Sprites served by mods through GetSprite (not in the atlases): checks the whole path.
+            foreach (string name in new[] { "gk2sn_icon_central_storage" })
+            {
+                Sprite sprite = collection.GetSprite(name);
+                Logger.LogInfo($"Mod sprite {name}: {(sprite == null ? "MISSING" : $"{sprite.rect.width}x{sprite.rect.height} ppu {sprite.pixelsPerUnit} bounds {sprite.bounds.size}")}");
+                if (sprite != null)
+                {
+                    File.WriteAllBytes(Path.Combine(dir, name + ".png"), SpriteToPng(sprite));
+                }
+            }
+            Write("sprites_meta.json", meta);
             Logger.LogInfo($"Sprites: {names.Count} names, {ok} exported, {failed} failed");
         }
 
+        /// <summary>
+        /// Copies exactly the sprite's texels: the blit scales/offsets the atlas so the sprite rect fills a
+        /// render texture of the same pixel size, sampled with point filtering.
+        /// </summary>
         private static byte[] SpriteToPng(Sprite sprite)
         {
             Texture2D atlas = sprite.texture;
             Rect r = sprite.textureRect;
-            RenderTexture rt = RenderTexture.GetTemporary(atlas.width, atlas.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            int w = Mathf.RoundToInt(r.width), h = Mathf.RoundToInt(r.height);
+            RenderTexture rt = RenderTexture.GetTemporary(w, h, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            rt.filterMode = FilterMode.Point;
+            FilterMode oldFilter = atlas.filterMode;
             RenderTexture previous = RenderTexture.active;
             try
             {
-                Graphics.Blit(atlas, rt);
+                atlas.filterMode = FilterMode.Point;
+                Graphics.Blit(atlas, rt, new Vector2(r.width / atlas.width, r.height / atlas.height), new Vector2(r.x / atlas.width, r.y / atlas.height));
                 RenderTexture.active = rt;
-                var output = new Texture2D(Mathf.RoundToInt(r.width), Mathf.RoundToInt(r.height), TextureFormat.RGBA32, false);
-                output.ReadPixels(new Rect(r.x, r.y, r.width, r.height), 0, 0);
+                var output = new Texture2D(w, h, TextureFormat.RGBA32, false);
+                output.ReadPixels(new Rect(0, 0, w, h), 0, 0);
                 output.Apply();
                 byte[] png = output.EncodeToPNG();
                 UnityEngine.Object.Destroy(output);
@@ -191,6 +225,7 @@ namespace GK2Mods.DataDump
             }
             finally
             {
+                atlas.filterMode = oldFilter;
                 RenderTexture.active = previous;
                 RenderTexture.ReleaseTemporary(rt);
             }

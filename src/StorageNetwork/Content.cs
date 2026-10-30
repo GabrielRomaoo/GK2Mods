@@ -31,6 +31,7 @@ namespace GK2Mods.StorageNetwork
             public string TemplateBuildingId;
             public Func<string> Cost;
             public string NamePt, NameEn, DescPt, DescEn;
+            public string Icon;  // null keeps the template chest's icon
         }
 
         private static readonly Structure[] Structures =
@@ -39,6 +40,7 @@ namespace GK2Mods.StorageNetwork
             {
                 Kind = StructureKind.Archive, BuildingId = "gk2sn_archive_p", Tag = ArchiveTag,
                 TemplateBuildingId = "chest_good_place_p", Cost = () => Plugin.ArchiveCost.Value,
+                Icon = Icons.CentralStorage,
                 NamePt = "Armazenamento Central", NameEn = "Central Storage",
                 DescPt = "Coração da Rede de Armazenamento. Os baús desta zona entram no estoque unificado. Só pode existir um. Também é um baú.",
                 DescEn = "Heart of the Storage Network. Chests in this zone join the shared stock. Only one can exist. Also works as a chest.",
@@ -97,6 +99,10 @@ namespace GK2Mods.StorageNetwork
                 def.isNeedsUnlock = !Plugin.TestMode.Value;
                 def.needItems = ParseCost(Plugin.TestMode.Value ? "wooden_plank:1" : s.Cost(), s.BuildingId);
                 def.expressionAfterBuilding = new List<LazyExpression>();
+                if (s.Icon != null)
+                {
+                    def.buildResultIcon = s.Icon;
+                }
                 def.moveMod = BuildingDef.MoveMod.None;
                 if (s.Kind == StructureKind.Archive)
                 {
