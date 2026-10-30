@@ -253,6 +253,12 @@ namespace GK2Mods.StorageNetwork
             AddText(lang, UnlockNoticeKey, pt
                 ? "Novas construções: Relé de Zona e Conector"
                 : "New buildings: Zone Relay and Connector");
+            AddText(lang, Fixtures.RelayInfoKey, pt
+                ? "Relé de Zona: liga os baús desta zona à rede do Armazenamento Central."
+                : "Zone Relay: links this zone's chests to the Central Storage network.");
+            AddText(lang, Fixtures.ConnectorInfoKey, pt
+                ? "Conector: as bancadas no alcance dele usam materiais da rede."
+                : "Connector: stations within its reach use materials from the network.");
         }
 
         /// <summary>

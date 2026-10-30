@@ -211,7 +211,8 @@ namespace GK2Mods.StorageNetwork
                 foreach (SGuid guid in zone.wgoDataList)
                 {
                     WgoData wgo = world.GetWgoData(guid);
-                    if (wgo?.Definition != null && wgo.Definition.inventorySize != 0 && wgo.Definition.OpenInMultiInventory && wgo.Inventory != null)
+                    if (wgo?.Definition != null && wgo.Definition.inventorySize != 0 && wgo.Definition.OpenInMultiInventory && wgo.Inventory != null
+                        && !Fixtures.IsFixtureTag(wgo.CustomTag))
                     {
                         pool.Add(wgo.Inventory);
                     }
