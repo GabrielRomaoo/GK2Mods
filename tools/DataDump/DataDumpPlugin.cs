@@ -185,7 +185,7 @@ namespace GK2Mods.DataDump
                 }
             }
             // Sprites served by mods through GetSprite (not in the atlases): checks the whole path.
-            foreach (string name in new[] { "gk2sn_icon_central_storage" })
+            foreach (string name in new[] { "gk2sn_icon_central_storage", "gk2sn_icon_zone_relay", "gk2sn_icon_connector" })
             {
                 Sprite sprite = collection.GetSprite(name);
                 Logger.LogInfo($"Mod sprite {name}: {(sprite == null ? "MISSING" : $"{sprite.rect.width}x{sprite.rect.height} ppu {sprite.pixelsPerUnit} bounds {sprite.bounds.size}")}");

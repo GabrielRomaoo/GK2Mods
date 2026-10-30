@@ -31,24 +31,25 @@ namespace GK2Mods.StorageNetwork
             public string TemplateBuildingId;
             public Func<string> Cost;
             public string NamePt, NameEn, DescPt, DescEn;
-            public string Icon;  // null keeps the template chest's icon
+            public string Icon;
         }
 
         private static readonly Structure[] Structures =
         {
             new Structure
             {
-                Kind = StructureKind.Archive, BuildingId = "gk2sn_archive_p", Tag = ArchiveTag,
+                Kind = StructureKind.Archive, BuildingId = ArchiveBuildingId, Tag = ArchiveTag,
                 TemplateBuildingId = "chest_good_place_p", Cost = () => Plugin.ArchiveCost.Value,
                 Icon = Icons.CentralStorage,
                 NamePt = "Armazenamento Central", NameEn = "Central Storage",
-                DescPt = "Coração da Rede de Armazenamento. Os baús desta zona entram no estoque unificado. Só pode existir um. Também é um baú.",
-                DescEn = "Heart of the Storage Network. Chests in this zone join the shared stock. Only one can exist. Also works as a chest.",
+                DescPt = "Coração da Rede de Armazenamento. Os baús desta zona entram no estoque unificado. Ao terminar a obra, você aprende a fazer Relés de Zona e Conectores. Só pode existir um. Também é um baú.",
+                DescEn = "Heart of the Storage Network. Chests in this zone join the shared stock. Finishing it teaches Zone Relays and Connectors. Only one can exist. Also works as a chest.",
             },
             new Structure
             {
                 Kind = StructureKind.Relay, BuildingId = "gk2sn_relay_p", Tag = RelayTag,
                 TemplateBuildingId = "chest_place_p", Cost = () => Plugin.RelayCost.Value,
+                Icon = Icons.ZoneRelay,
                 NamePt = "Relé de Zona", NameEn = "Zone Relay",
                 DescPt = "Liga os baús desta zona à rede do Armazenamento Central. Sem um Armazenamento Central construído, não faz nada. Também é um baú.",
                 DescEn = "Links the chests in this zone to the Central Storage's network. Does nothing until a Central Storage exists. Also works as a chest.",
@@ -57,6 +58,7 @@ namespace GK2Mods.StorageNetwork
             {
                 Kind = StructureKind.Connector, BuildingId = "gk2sn_connector_p", Tag = ConnectorTag,
                 TemplateBuildingId = "chest_rough_place_p", Cost = () => Plugin.ConnectorCost.Value,
+                Icon = Icons.Connector,
                 NamePt = "Conector", NameEn = "Connector",
                 DescPt = "Coloque ao lado de uma bancada ou estação: ela passa a usar materiais de todos os baús da rede. A zona precisa de um Armazenamento Central ou Relé.",
                 DescEn = "Place next to a workbench or station so it can use materials from every chest in the network. The zone needs a Central Storage or Relay.",
@@ -74,6 +76,41 @@ namespace GK2Mods.StorageNetwork
 
         internal static string TagForBuilding(string buildingId) =>
             Structures.FirstOrDefault(s => s.BuildingId == buildingId)?.Tag;
+
+        internal const string ArchiveBuildingId = "gk2sn_archive_p";
+        internal const string UnlockNoticeKey = "gk2sn_unlock_notice";
+        private static readonly string[] FollowUpBuildingIds = { "gk2sn_relay_p", "gk2sn_connector_p" };
+
+        /// <summary>Teaches Relay and Connector once a Central Storage is finished. Returns true if anything was new.</summary>
+        internal static bool UnlockFollowUps(bool notify)
+        {
+            KnowledgeSystem knowledge = MainGame.Instance?.GameSave?.knowledgeSystem;
+            if (knowledge == null)
+            {
+                return false;
+            }
+            bool learned = false;
+            foreach (string id in FollowUpBuildingIds)
+            {
+                if (!knowledge.unlockedBuildings.Contains(id))
+                {
+                    knowledge.UnlockBuilding(id);
+                    learned = true;
+                }
+            }
+            if (learned && notify)
+            {
+                try
+                {
+                    LazySingleton<UINotificator>.Instance.ShowSimpleTextWithIconNotification(UnlockNoticeKey, Icons.CentralStorage);
+                }
+                catch (Exception e)
+                {
+                    Plugin.Log.LogWarning($"Unlock notice not shown: {e.Message}");
+                }
+            }
+            return learned;
+        }
 
         internal static bool IsOurTag(string tag) =>
             tag == ArchiveTag || tag == RelayTag || tag == ConnectorTag;
@@ -124,12 +161,11 @@ namespace GK2Mods.StorageNetwork
                 Plugin.Log.LogError($"Unlock tech '{Plugin.UnlockTech.Value}' not found: the structures can't be unlocked.");
                 return;
             }
-            foreach (BuildingDef def in injectedDefs)
+            // Only the Central Storage hangs on the tech: a tech node shows at most 3 unlock icons and this one
+            // already has 2. Relay and Connector are learned by finishing a Central Storage (UnlockFollowUps).
+            if (!tech.buildingsAfterUnlock.Contains(ArchiveBuildingId))
             {
-                if (!tech.buildingsAfterUnlock.Contains(def.id))
-                {
-                    tech.buildingsAfterUnlock.Add(def.id);
-                }
+                tech.buildingsAfterUnlock.Add(ArchiveBuildingId);
             }
             Plugin.Log.LogInfo(Plugin.TestMode.Value
                 ? $"Registered {injectedDefs.Count} structures in TEST MODE (no tech needed, 1 plank each)."
@@ -211,6 +247,9 @@ namespace GK2Mods.StorageNetwork
                 lang.dictionary[s.Tag] = name;
                 lang.dictionary[s.Tag + "_d"] = desc;
             }
+            lang.dictionary[UnlockNoticeKey] = pt
+                ? "Novas construções: Relé de Zona e Conector"
+                : "New buildings: Zone Relay and Connector";
         }
 
         private static BuildingDef CloneDef(BuildingDef template)

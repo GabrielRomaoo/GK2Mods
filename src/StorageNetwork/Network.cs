@@ -123,6 +123,7 @@ namespace GK2Mods.StorageNetwork
             }
 
             var hubZones = new HashSet<WorldZoneData>();
+            int builtArchives = 0;
             foreach (WgoData wgo in world.Cache.wgoDataByUidCache.Values)
             {
                 string tag = wgo?.CustomTag;
@@ -134,15 +135,21 @@ namespace GK2Mods.StorageNetwork
                 {
                     tagByInventory[wgo.Inventory] = tag;
                 }
+                // A construction site ("..._place") counts for the one-Central-Storage limit but does nothing yet.
+                bool built = !wgo.id.EndsWith("_place", StringComparison.Ordinal);
+                if (tag == Content.ArchiveTag)
+                {
+                    archiveCount++;
+                }
                 WorldZoneData zone = wgo.WorldZoneData;
-                if (zone == null)
+                if (zone == null || !built)
                 {
                     continue;
                 }
                 switch (tag)
                 {
                     case Content.ArchiveTag:
-                        archiveCount++;
+                        builtArchives++;
                         hubZones.Add(zone);
                         break;
                     case Content.RelayTag:
@@ -158,11 +165,13 @@ namespace GK2Mods.StorageNetwork
                 }
             }
 
-            // Relays only work once an Archive exists.
-            if (archiveCount == 0)
+            // Relays only work once a Central Storage is finished.
+            if (builtArchives == 0)
             {
                 return;
             }
+            // Saves where it was finished before this rule existed learn the follow-ups quietly.
+            Content.UnlockFollowUps(notify: false);
             connectedZones.UnionWith(hubZones);
 
             // Same filter the game uses for a zone's MultiInventory.

@@ -112,6 +112,11 @@ namespace GK2Mods.StorageNetwork
                 wgoData.CustomTag = PendingTag.Value;
                 PendingTag.Value = null;
                 Plugin.Debug($"Tagged {wgoData.id} as {wgoData.CustomTag}");
+                // The finished Central Storage (not its construction site) teaches Relay and Connector.
+                if (wgoData.CustomTag == Content.ArchiveTag && !wgoData.id.EndsWith("_place", StringComparison.Ordinal))
+                {
+                    Content.UnlockFollowUps(notify: true);
+                }
             }
         }
     }

@@ -14,6 +14,8 @@ namespace GK2Mods.StorageNetwork
     internal static class Icons
     {
         internal const string CentralStorage = "gk2sn_icon_central_storage";
+        internal const string ZoneRelay = "gk2sn_icon_zone_relay";
+        internal const string Connector = "gk2sn_icon_connector";
 
         // The game's i_b_* sprites are 48px at 50 pixels per unit, stored ~32px in their atlas.
         // A 32px sprite at 32/48*50 PPU has the same size in every layout.
