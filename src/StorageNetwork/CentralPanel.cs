@@ -74,7 +74,9 @@ namespace GK2Mods.StorageNetwork
                     continue;
                 }
                 int stacks = items.Sum(t => (t.count + Math.Max(1, t.def?.stackCount ?? 1) - 1) / Math.Max(1, t.def?.stackCount ?? 1));
-                var inventory = new Inventory(category.Key, Math.Max(stacks, 1));
+                // The container must be a real item id ("inventory", like the game's own); the section title
+                // comes from the view id, i.e. the category's text key.
+                var inventory = new Inventory("inventory", Math.Max(stacks, 1), category.Key);
                 foreach (var (id, count, _) in items)
                 {
                     inventory.AddItemToInventory(new Item(id, count), out _, null, true);
