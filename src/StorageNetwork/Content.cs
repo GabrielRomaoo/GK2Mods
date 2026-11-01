@@ -60,8 +60,8 @@ namespace GK2Mods.StorageNetwork
                 TemplateBuildingId = "chest_rough_place_p", Cost = () => Plugin.ConnectorCost.Value,
                 Icon = Icons.Connector,
                 NamePt = "Conector", NameEn = "Connector",
-                DescPt = "Coloque ao lado de uma bancada ou estação, em qualquer zona: ela passa a usar materiais do estoque da rede (baús da zona do Armazenamento Central e das zonas com Relé). Construções nesta zona também podem ser pagas com a rede. Também é uma caixa de envio: o que você guardar nele vai para o Armazenamento Central uma vez por dia. Precisa de um Armazenamento Central construído. Não funciona na fábrica.",
-                DescEn = "Place next to a workbench or station, in any zone, so it can use materials from the network's stock (chests in the Central Storage's zone and in zones with a Relay). Construction in this zone can be paid from the network too. Also a drop box: whatever you store in it goes to the Central Storage once a day. Needs a finished Central Storage. Doesn't work in the factory.",
+                DescPt = "Coloque ao lado de uma bancada, estação ou canteiro, em qualquer zona: eles passam a usar materiais do estoque da rede (baús da zona do Armazenamento Central e das zonas com Relé). Construções nesta zona também podem ser pagas com a rede. Também é uma caixa de envio: o que você guardar nele vai para o Armazenamento Central uma vez por dia. Precisa de um Armazenamento Central construído. Não funciona na fábrica.",
+                DescEn = "Place next to a workbench, station or garden bed, in any zone, so it can use materials from the network's stock (chests in the Central Storage's zone and in zones with a Relay). Construction in this zone can be paid from the network too. Also a drop box: whatever you store in it goes to the Central Storage once a day. Needs a finished Central Storage. Doesn't work in the factory.",
             },
         };
 

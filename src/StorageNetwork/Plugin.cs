@@ -9,7 +9,7 @@ namespace GK2Mods.StorageNetwork
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "gk2mods.storagenetwork";
-        public const string Version = "0.2.1";
+        public const string Version = "0.2.2";
 
         internal static ManualLogSource Log;
 

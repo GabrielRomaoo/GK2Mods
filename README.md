@@ -33,7 +33,7 @@ existindo: sem o mod, as três estruturas viram baús comuns, sem perder nenhum 
 | Estrutura | Como liberar | Custo padrão | O que faz |
 |---|---|---|---|
 | **Armazenamento Central** | Tecnologia *Articulação de Madeira* (árvore de Construção, mid game) | 4 articulações de madeira, 8 tábuas untadas, 4 engrenagens de bronze, 8 pregos de ferro | Coração da rede. Os baús da zona dele viram o estoque da rede. Só existe um por save. Também é um baú, e ao abrir mostra o estoque da rede inteira por categoria, de onde dá para retirar e depositar. |
-| **Conector** | Terminar a obra do Armazenamento Central | 4 tábuas, 4 pregos de ferro, 1 engrenagem de bronze | Coloque perto de uma bancada, em **qualquer zona**: ela passa a usar o estoque da rede. A zona inteira também pode pagar construções com a rede. E é uma **caixa de envio**: o que você guardar nele vai para o Armazenamento Central uma vez por dia. |
+| **Conector** | Terminar a obra do Armazenamento Central | 4 tábuas, 4 pregos de ferro, 1 engrenagem de bronze | Coloque perto de uma bancada ou de canteiros e vinhedos, em **qualquer zona**: eles passam a usar o estoque da rede (nos canteiros, sementes e adubo). A zona inteira também pode pagar construções com a rede. E é uma **caixa de envio**: o que você guardar nele vai para o Armazenamento Central uma vez por dia. |
 | **Relé de Zona** | Tecnologia *Escultura em Madeira* (late game) | 2 madeiras entalhadas, 6 tábuas untadas, 4 detalhes de ferro, 2 engrenagens de bronze | Coloca os baús da zona dele no estoque da rede. A partir daí, o que é produzido ou guardado nessa zona fica disponível para todas as bancadas conectadas. |
 
 ### Como usar, passo a passo
@@ -50,6 +50,9 @@ existindo: sem o mod, as três estruturas viram baús comuns, sem perder nenhum 
 ### Regras importantes
 
 - **Sem Armazenamento Central pronto, nada funciona.** Relés e Conectores ficam esperando.
+- **Plantações:** canteiros e vinhedos dentro do alcance de um Conector plantam e adubam com o estoque da rede.
+  Na janela do canteiro, a escolha de semente ou adubo mostra também os baús da rede que têm algo útil, e a
+  contagem de sementes inclui a rede. A colheita fica na zona, como qualquer produção.
 - **O que uma bancada produz fica na zona dela.** Para entrar no estoque, guarde num baú de uma zona da rede ou
   num Conector.
 - **A fábrica fica de fora.** Nas zonas da linha de montagem (esteiras), Armazenamento, Relé e Conector não ligam

@@ -140,7 +140,7 @@ namespace GK2Mods.StorageNetwork
         internal static Vector2 LinkReach =>
             new Vector2(Plugin.ConnectorRadiusCells.Value * BuildConsts.CELL_SIZE.x, Plugin.ConnectorRadiusCells.Value * BuildConsts.CELL_SIZE.y);
 
-        /// <summary>Objects a Connector can link: crafting stations (benches, furnaces, anvils, kilns, alchemy, morgue).</summary>
+        /// <summary>Objects a Connector can link: crafting stations (benches, furnaces, anvils, kilns, alchemy, morgue) and garden beds.</summary>
         internal static bool IsLinkableStation(WgoData wgo)
         {
             WGODef def = wgo?.Definition;
@@ -155,6 +155,7 @@ namespace GK2Mods.StorageNetwork
                 case WGODef.InteractionType.Autopsy:
                 case WGODef.InteractionType.Embalm:
                 case WGODef.InteractionType.Crematorium:
+                case WGODef.InteractionType.Garden: // garden beds, vineyard rows, seed generator (see Garden.cs)
                     break;
                 default:
                     return false;
