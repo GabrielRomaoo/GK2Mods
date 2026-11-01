@@ -57,7 +57,8 @@ namespace GK2Mods.StorageNetwork
 
         /// <summary>
         /// The Keeper's construction in this zone can be paid from the network: zones with a Central Storage or
-        /// Relay, and zones with a Connector (outside the factory) once a Central Storage is finished.
+        /// Relay, and, once a Central Storage is finished, zones with a Connector (outside the factory) and zones
+        /// where no Connector can be built (BuildZonesWithoutConnector, by default the Barracks).
         /// </summary>
         internal static bool CanBuildFromNetwork(WorldZoneData zone)
         {
@@ -66,7 +67,11 @@ namespace GK2Mods.StorageNetwork
                 return false;
             }
             EnsureFresh();
-            return connectedZones.Contains(zone) || (networkActive && !IsExcludedZone(zone) && connectorsByZone.ContainsKey(zone));
+            if (connectedZones.Contains(zone))
+            {
+                return true;
+            }
+            return networkActive && !IsExcludedZone(zone) && (connectorsByZone.ContainsKey(zone) || buildOnlyZones.Contains(zone));
         }
 
         internal static bool IsZoneConnected(WorldZoneData zone)
@@ -163,25 +168,37 @@ namespace GK2Mods.StorageNetwork
 
         private static Vector2 Flat(Vector3 p) => new Vector2(p.x, p.z);
 
-        private static string excludedZonesText;
-        private static readonly HashSet<string> excludedZoneIds = new HashSet<string>(StringComparer.Ordinal);
+        /// <summary>A comma-separated list of world zone ids from the config, re-parsed when the text changes.</summary>
+        private sealed class ZoneList
+        {
+            private readonly Func<string> source;
+            private readonly HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
+            private string parsed;
+
+            internal ZoneList(Func<string> source) => this.source = source;
+
+            internal bool Contains(WorldZoneData zone)
+            {
+                string text = source() ?? "";
+                if (text != parsed)
+                {
+                    parsed = text;
+                    ids.Clear();
+                    foreach (string part in text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        ids.Add(part.Trim());
+                    }
+                }
+                string id = zone?.Definition?.id;
+                return id != null && ids.Contains(id);
+            }
+        }
+
+        private static readonly ZoneList excludedZones = new ZoneList(() => Plugin.ExcludedZones.Value);
+        private static readonly ZoneList buildOnlyZones = new ZoneList(() => Plugin.BuildZonesWithoutConnector.Value);
 
         /// <summary>Zones listed in ExcludedZones (by default the factory's two zones).</summary>
-        internal static bool IsExcludedZone(WorldZoneData zone)
-        {
-            string text = Plugin.ExcludedZones.Value ?? "";
-            if (text != excludedZonesText)
-            {
-                excludedZonesText = text;
-                excludedZoneIds.Clear();
-                foreach (string part in text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                {
-                    excludedZoneIds.Add(part.Trim());
-                }
-            }
-            string id = zone?.Definition?.id;
-            return id != null && excludedZoneIds.Contains(id);
-        }
+        internal static bool IsExcludedZone(WorldZoneData zone) => excludedZones.Contains(zone);
 
         private static void EnsureFresh()
         {

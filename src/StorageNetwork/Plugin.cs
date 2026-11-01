@@ -9,7 +9,7 @@ namespace GK2Mods.StorageNetwork
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "gk2mods.storagenetwork";
-        public const string Version = "0.2.0";
+        public const string Version = "0.2.1";
 
         internal static ManualLogSource Log;
 
@@ -21,6 +21,7 @@ namespace GK2Mods.StorageNetwork
         internal static ConfigEntry<float> ConnectorRadiusCells;
         internal static ConfigEntry<bool> KeeperBuildsFromNetwork;
         internal static ConfigEntry<string> ExcludedZones;
+        internal static ConfigEntry<string> BuildZonesWithoutConnector;
         internal static ConfigEntry<bool> DebugLog;
         internal static ConfigEntry<bool> TestMode;
 
@@ -46,6 +47,9 @@ namespace GK2Mods.StorageNetwork
             ExcludedZones = Config.Bind("3 Network", "ExcludedZones", "conveyor,conveyor_storage",
                 "World zones (ids, comma separated) where a Central Storage or Relay links nothing, so the factory keeps its own logistics. " +
                 "Its output still reaches the network through the game's porters.");
+            BuildZonesWithoutConnector = Config.Bind("3 Network", "BuildZonesWithoutConnector", "town_guard_barracks",
+                "World zones (ids, comma separated) whose build menu has no chests, so no Connector can stand there: once a Central Storage " +
+                "is finished, the Keeper's construction there is paid from the network anyway (needs KeeperBuildsFromNetwork). Default: the Barracks.");
             DebugLog = Config.Bind("9 Debug", "Log", false, "Extra log lines about the network (BepInEx/LogOutput.log).");
             TestMode = Config.Bind("9 Debug", "TestMode", false,
                 "Testing only: the structures need no technology and cost 1 wooden plank each. Use on a spare save slot. Read on game start.");

@@ -225,7 +225,7 @@ namespace GK2Mods.StorageNetwork
         }
     }
 
-    /// <summary>The Keeper's own construction in a hub zone or a zone with a Connector can be paid from the network.</summary>
+    /// <summary>The Keeper's own construction in a hub zone, a zone with a Connector or the Barracks can be paid from the network.</summary>
     [HarmonyPatch(typeof(BuildManager), nameof(BuildManager.RefreshAdditionalInventories))]
     internal static class BuildManager_RefreshAdditionalInventories
     {
@@ -236,7 +236,9 @@ namespace GK2Mods.StorageNetwork
                 return;
             }
             WorldZoneData zone = __instance.worldZone?.Data;
-            if (!Network.CanBuildFromNetwork(zone))
+            bool fromNetwork = Network.CanBuildFromNetwork(zone);
+            Plugin.Debug($"Build menu in zone '{zone?.Definition?.id}': paid from network = {fromNetwork}");
+            if (!fromNetwork)
             {
                 return;
             }

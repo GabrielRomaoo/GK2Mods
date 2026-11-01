@@ -55,6 +55,8 @@ existindo: sem o mod, as três estruturas viram baús comuns, sem perder nenhum 
 - **A fábrica fica de fora.** Nas zonas da linha de montagem (esteiras), Armazenamento, Relé e Conector não ligam
   nada, e as máquinas da fábrica nunca puxam da rede. A fábrica continua com a logística própria; o que ela
   produz chega à base pelos carregadores do jogo.
+- **A Caserna não tem baús no menu de construção**, então não aceita Conector. Mesmo assim, barricadas, torres e
+  expansões de lá são pagas com a rede assim que o Armazenamento Central estiver pronto.
 - **Zumbis continuam como no jogo original.** Carregadores e fornecedores não usam a rede. Já um zumbi
   trabalhando numa bancada conectada usa.
 - **O mensageiro não leva bolsas nem itens com estado próprio** (ferramentas com durabilidade, por exemplo). Eles
@@ -73,6 +75,7 @@ Edite com o jogo fechado.
 | `3 Network / ConnectorRadiusCells` | `4` | Alcance do Conector, em células da grade de construção (1 a 12). |
 | `3 Network / KeeperBuildsFromNetwork` | `true` | Construções do Coveiro nas zonas da rede podem ser pagas com o estoque. |
 | `3 Network / ExcludedZones` | `conveyor,conveyor_storage` | Zonas onde a rede não funciona (por padrão, a fábrica). |
+| `3 Network / BuildZonesWithoutConnector` | `town_guard_barracks` | Zonas onde não dá para construir Conector, mas as construções são pagas com a rede assim que o Armazenamento Central estiver pronto (por padrão, a Caserna). |
 | `9 Debug / Log` | `false` | Mensagens extras em `BepInEx\LogOutput.log`. |
 | `9 Debug / TestMode` | `false` | Só para testes: estruturas sem tecnologia e custando 1 tábua. Use num save de teste. |
 
