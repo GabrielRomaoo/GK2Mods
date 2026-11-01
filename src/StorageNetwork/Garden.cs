@@ -16,6 +16,9 @@ namespace GK2Mods.StorageNetwork
         /// <summary>The bed whose window is opening a seed/fertilizer picker right now (set only during that call).</summary>
         internal static WgoData PickingFor;
 
+        /// <summary>The bed whose window is counting available seeds right now (set only during that call).</summary>
+        internal static WgoData CountingFor;
+
         internal static bool IsLinkedBed(WgoData bed) => bed != null && Network.IsStationConnected(bed);
 
         /// <summary>Network chests not already in the player's own view (inventory + current zone).</summary>
@@ -46,22 +49,77 @@ namespace GK2Mods.StorageNetwork
         }
     }
 
-    /// <summary>The seed cell and the Plant button count seeds in the network as well.</summary>
-    [HarmonyPatch(typeof(UIGardenBedWindow), nameof(UIGardenBedWindow.GetAvailableSeedCount))]
-    internal static class UIGardenBedWindow_GetAvailableSeedCount
+    /// <summary>
+    /// The seed cell and the Plant button count seeds in the network as well. GetAvailableSeedCount itself is a
+    /// one-liner the JIT inlines (a patch on it never runs), so its two callers mark the bed instead and the
+    /// player's MultiInventory they build picks up the network chests.
+    /// </summary>
+    [HarmonyPatch]
+    internal static class UIGardenBedWindow_SeedCount
     {
-        private static void Postfix(UIGardenBedWindow __instance, string itemId, ref int __result)
+        private static IEnumerable<System.Reflection.MethodBase> TargetMethods()
         {
+            yield return AccessTools.Method(typeof(UIGardenBedWindow), nameof(UIGardenBedWindow.CanPlantSelectedSeed));
+            yield return AccessTools.Method(typeof(UIGardenBedWindow), nameof(UIGardenBedWindow.UpdateSeedItemCell));
+        }
+
+        private static void Prefix(UIGardenBedWindow __instance)
+        {
+            Garden.CountingFor = __instance.data?.WgoData;
+        }
+
+        private static Exception Finalizer(Exception __exception)
+        {
+            Garden.CountingFor = null;
+            return __exception;
+        }
+    }
+
+    [HarmonyPatch(typeof(MultiInventory), MethodType.Constructor, typeof(PlayerData), typeof(bool))]
+    internal static class MultiInventory_PlayerCtor_Garden
+    {
+        private static void Postfix(MultiInventory __instance)
+        {
+            WgoData bed = Garden.CountingFor;
+            if (bed == null)
+            {
+                return;
+            }
+            Garden.CountingFor = null; // RemoteChests builds a player MultiInventory too
             try
             {
-                if (Garden.IsLinkedBed(__instance.data?.WgoData))
+                if (Garden.IsLinkedBed(bed))
                 {
-                    __result += new MultiInventory(Garden.RemoteChests()).GetTotalCount(itemId);
+                    foreach (Inventory inventory in Garden.RemoteChests())
+                    {
+                        if (!__instance.inventoryList.Contains(inventory))
+                        {
+                            __instance.inventoryList.Add(inventory);
+                        }
+                    }
                 }
             }
             catch (Exception e)
             {
                 Plugin.Log.LogError($"Garden seed count failed: {e}");
+            }
+            finally
+            {
+                Garden.CountingFor = bed;
+            }
+        }
+    }
+
+    /// <summary>Diagnostics: one line per bed window opened.</summary>
+    [HarmonyPatch(typeof(UIGardenBedWindow), nameof(UIGardenBedWindow.SetData))]
+    internal static class UIGardenBedWindow_SetData
+    {
+        private static void Postfix(UIGardenBedWindowData data)
+        {
+            WgoData bed = data?.WgoData;
+            if (bed != null)
+            {
+                Plugin.Debug($"Garden bed window: {bed.id} in '{bed.WorldZoneData?.Definition?.id}', linked to the network = {Garden.IsLinkedBed(bed)}");
             }
         }
     }
@@ -101,13 +159,20 @@ namespace GK2Mods.StorageNetwork
         {
             try
             {
-                if (!Garden.IsLinkedBed(Garden.PickingFor))
+                WgoData bed = Garden.PickingFor;
+                if (bed == null)
                 {
+                    return;
+                }
+                if (!Garden.IsLinkedBed(bed))
+                {
+                    Plugin.Debug($"Garden picker: {bed.id} is not linked (no finished Connector within reach)");
                     return;
                 }
                 List<Inventory> remote = Garden.RemoteChests().Where(i => Garden.HoldsMatching(i, itemsAvailableCondition)).ToList();
                 if (remote.Count == 0)
                 {
+                    Plugin.Debug("Garden picker: no network chest holds a valid item");
                     return;
                 }
                 List<InventoryWidgetDataBase> widgets = InventoryWidgetDataHelper.GetWidgetsDataForMultiInventory(new MultiInventory(remote),
