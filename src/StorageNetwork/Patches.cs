@@ -112,7 +112,7 @@ namespace GK2Mods.StorageNetwork
                 wgoData.CustomTag = PendingTag.Value;
                 PendingTag.Value = null;
                 Plugin.Debug($"Tagged {wgoData.id} as {wgoData.CustomTag}");
-                // The finished Central Storage (not its construction site) teaches Relay and Connector.
+                // The finished Central Storage (not its construction site) teaches the Connector.
                 if (wgoData.CustomTag == Content.ArchiveTag && !wgoData.id.EndsWith("_place", StringComparison.Ordinal))
                 {
                     Content.UnlockFollowUps(notify: true);
@@ -225,7 +225,7 @@ namespace GK2Mods.StorageNetwork
         }
     }
 
-    /// <summary>The Keeper's own construction in a connected zone can be paid from the network.</summary>
+    /// <summary>The Keeper's own construction in a hub zone or a zone with a Connector can be paid from the network.</summary>
     [HarmonyPatch(typeof(BuildManager), nameof(BuildManager.RefreshAdditionalInventories))]
     internal static class BuildManager_RefreshAdditionalInventories
     {
@@ -236,7 +236,7 @@ namespace GK2Mods.StorageNetwork
                 return;
             }
             WorldZoneData zone = __instance.worldZone?.Data;
-            if (!Network.IsZoneConnected(zone))
+            if (!Network.CanBuildFromNetwork(zone))
             {
                 return;
             }

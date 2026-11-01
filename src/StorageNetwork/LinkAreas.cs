@@ -32,7 +32,7 @@ namespace GK2Mods.StorageNetwork
             Clear();
             WorldZoneData zoneData = zone?.Data;
             WorldData world = MainGame.Instance?.GameSave?.WorldData;
-            if (zoneData == null || world == null)
+            if (zoneData == null || world == null || Network.IsExcludedZone(zoneData))
             {
                 return;
             }

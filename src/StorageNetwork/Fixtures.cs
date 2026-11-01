@@ -6,14 +6,14 @@ using LazyBearTechnology;
 namespace GK2Mods.StorageNetwork
 {
     /// <summary>
-    /// Zone Relay and Connector are fixtures, not chests: interacting shows what they do instead of a chest
-    /// window, and their (template chest's) inventory is left out of the zone's storage, so neither zombies,
-    /// stations nor the network put anything in it. One that still holds items opens normally, to empty it.
+    /// Zone Relay and Connector are fixtures, not chests: their (template chest's) inventory is left out of the
+    /// zone's storage, so neither zombies, stations nor the network put anything in it or take from it.
+    /// Interacting with a Relay shows what it does (one that still holds items opens, to empty it); a Connector
+    /// opens as the courier's drop box.
     /// </summary>
     internal static class Fixtures
     {
         internal const string RelayInfoKey = "gk2sn_relay_info";
-        internal const string ConnectorInfoKey = "gk2sn_connector_info";
 
         internal static bool IsFixtureTag(string tag) => tag == Content.RelayTag || tag == Content.ConnectorTag;
 
@@ -29,14 +29,14 @@ namespace GK2Mods.StorageNetwork
         private static bool Prefix(ChestInteractionHandler __instance, ref bool __result)
         {
             WgoData data = __instance.assignedWgo?.Data;
-            if (data == null || !Fixtures.IsFixtureTag(data.CustomTag) || !Fixtures.IsEmpty(data.Inventory))
+            // The Connector opens as its drop box (see Courier); only an empty Relay explains itself instead.
+            if (data == null || data.CustomTag != Content.RelayTag || !Fixtures.IsEmpty(data.Inventory))
             {
                 return true;
             }
             try
             {
-                string key = data.CustomTag == Content.RelayTag ? Fixtures.RelayInfoKey : Fixtures.ConnectorInfoKey;
-                LazySingleton<UINotificator>.Instance.ShowSimpleTextWithIconNotification(key, Content.IconForTag(data.CustomTag));
+                LazySingleton<UINotificator>.Instance.ShowSimpleTextWithIconNotification(Fixtures.RelayInfoKey, Content.IconForTag(data.CustomTag));
             }
             catch (Exception e)
             {

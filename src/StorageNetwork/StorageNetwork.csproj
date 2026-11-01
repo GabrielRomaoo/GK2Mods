@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>GK2StorageNetwork</AssemblyName>
     <RootNamespace>GK2Mods.StorageNetwork</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <ModFolder>GK2StorageNetwork</ModFolder>
     <ModId>gk2storagenetwork</ModId>
     <ModDisplayName>Rede de Armazenamento</ModDisplayName>

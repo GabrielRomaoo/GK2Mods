@@ -16,6 +16,9 @@ namespace GK2Mods.StorageNetwork
         private static object snapshotSave;
 
         private static int archiveCount;
+        private static bool networkActive;
+        private static Inventory centralInventory;
+        private static readonly List<Inventory> connectorBoxes = new List<Inventory>();
         private static readonly HashSet<WorldZoneData> connectedZones = new HashSet<WorldZoneData>();
         private static readonly List<Inventory> pool = new List<Inventory>();
         private static readonly Dictionary<Inventory, string> tagByInventory = new Dictionary<Inventory, string>();
@@ -31,6 +34,40 @@ namespace GK2Mods.StorageNetwork
         }
 
         internal static void Invalidate() => nextRefresh = 0f;
+
+        /// <summary>The finished Central Storage's own chest, or null while the network is inactive.</summary>
+        internal static Inventory CentralInventory
+        {
+            get
+            {
+                EnsureFresh();
+                return networkActive ? centralInventory : null;
+            }
+        }
+
+        /// <summary>Inventories of the finished Connectors outside excluded zones (the courier's drop boxes).</summary>
+        internal static List<Inventory> ConnectorBoxes
+        {
+            get
+            {
+                EnsureFresh();
+                return connectorBoxes;
+            }
+        }
+
+        /// <summary>
+        /// The Keeper's construction in this zone can be paid from the network: zones with a Central Storage or
+        /// Relay, and zones with a Connector (outside the factory) once a Central Storage is finished.
+        /// </summary>
+        internal static bool CanBuildFromNetwork(WorldZoneData zone)
+        {
+            if (zone == null)
+            {
+                return false;
+            }
+            EnsureFresh();
+            return connectedZones.Contains(zone) || (networkActive && !IsExcludedZone(zone) && connectorsByZone.ContainsKey(zone));
+        }
 
         internal static bool IsZoneConnected(WorldZoneData zone)
         {
@@ -62,11 +99,20 @@ namespace GK2Mods.StorageNetwork
             return tagByInventory.TryGetValue(inventory, out string tag) ? tag : null;
         }
 
-        /// <summary>A station is linked when its zone is connected and a Connector stands close enough.</summary>
+        /// <summary>
+        /// A station is linked when a Connector stands close enough, in any zone outside the factory, once a Central
+        /// Storage is finished. It then draws from the chests of the hub zones (Central Storage + Relays): Relays add
+        /// stock to the network, Connectors draw from it.
+        /// </summary>
         internal static bool IsStationConnected(WgoData station)
         {
             WorldZoneData zone = station?.WorldZoneData;
-            if (!IsZoneConnected(zone) || !connectorsByZone.TryGetValue(zone, out List<Vector2> connectors))
+            if (zone == null)
+            {
+                return false;
+            }
+            EnsureFresh();
+            if (!networkActive || IsExcludedZone(zone) || !connectorsByZone.TryGetValue(zone, out List<Vector2> connectors))
             {
                 return false;
             }
@@ -109,11 +155,33 @@ namespace GK2Mods.StorageNetwork
                     return false;
             }
             string id = wgo.id;
-            return !id.StartsWith("test", StringComparison.Ordinal) && !id.Contains("broken")
+            // Factory machines (assembly benches, furnaces, kitchens, bioreactor) are fed by the conveyors only.
+            return !id.StartsWith("test", StringComparison.Ordinal) && !id.StartsWith("conveyor_", StringComparison.Ordinal)
+                && !id.Contains("broken")
                 && !id.Contains("blockage") && !id.Contains("repairing") && !id.EndsWith("_place", StringComparison.Ordinal);
         }
 
         private static Vector2 Flat(Vector3 p) => new Vector2(p.x, p.z);
+
+        private static string excludedZonesText;
+        private static readonly HashSet<string> excludedZoneIds = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>Zones listed in ExcludedZones (by default the factory's two zones).</summary>
+        internal static bool IsExcludedZone(WorldZoneData zone)
+        {
+            string text = Plugin.ExcludedZones.Value ?? "";
+            if (text != excludedZonesText)
+            {
+                excludedZonesText = text;
+                excludedZoneIds.Clear();
+                foreach (string part in text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    excludedZoneIds.Add(part.Trim());
+                }
+            }
+            string id = zone?.Definition?.id;
+            return id != null && excludedZoneIds.Contains(id);
+        }
 
         private static void EnsureFresh()
         {
@@ -138,6 +206,9 @@ namespace GK2Mods.StorageNetwork
         private static void Clear()
         {
             archiveCount = 0;
+            networkActive = false;
+            centralInventory = null;
+            connectorBoxes.Clear();
             connectedZones.Clear();
             pool.Clear();
             tagByInventory.Clear();
@@ -182,6 +253,10 @@ namespace GK2Mods.StorageNetwork
                     case Content.ArchiveTag:
                         builtArchives++;
                         hubZones.Add(zone);
+                        if (!IsExcludedZone(zone))
+                        {
+                            centralInventory = wgo.Inventory;
+                        }
                         break;
                     case Content.RelayTag:
                         hubZones.Add(zone);
@@ -192,18 +267,30 @@ namespace GK2Mods.StorageNetwork
                             connectorsByZone[zone] = list = new List<Vector2>();
                         }
                         list.Add(Flat(wgo.Position));
+                        if (wgo.Inventory != null && !IsExcludedZone(zone))
+                        {
+                            connectorBoxes.Add(wgo.Inventory);
+                        }
                         break;
                 }
             }
 
-            // Relays only work once a Central Storage is finished.
-            if (builtArchives == 0)
+            // Relays only work once a Central Storage is finished, and only outside the factory.
+            if (builtArchives == 0 || centralInventory == null)
             {
+                connectorBoxes.Clear();
                 return;
             }
+            networkActive = true;
             // Saves where it was finished before this rule existed learn the follow-ups quietly.
             Content.UnlockFollowUps(notify: false);
             connectedZones.UnionWith(hubZones);
+            // The factory keeps its own logistics: a hub standing there links nothing.
+            int excluded = connectedZones.RemoveWhere(IsExcludedZone);
+            if (excluded > 0)
+            {
+                Plugin.Debug($"Network: {excluded} hub zone(s) ignored (ExcludedZones)");
+            }
 
             // Same filter the game uses for a zone's MultiInventory.
             foreach (WorldZoneData zone in connectedZones)
