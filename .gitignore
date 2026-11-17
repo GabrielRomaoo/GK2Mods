@@ -3,3 +3,4 @@ obj/
 *.user
 .vs/
 dumps/
+__pycache__/
